@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Food Detection Result</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .result-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .result-box.error {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .food-emoji {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+        
+        .food-name {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+        }
+        
+        .confidence {
+            font-size: 1.5em;
+            opacity: 0.9;
+        }
+        
+        .dietary-tags {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .tag {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        
+        .tag.vegan {
+            background: #10b981;
+        }
+        
+        .tag.vegetarian {
+            background: #f59e0b;
+        }
+        
+        .tag.gluten-free {
+            background: #8b5cf6;
+        }
+        
+        .tag.dairy-free {
+            background: #06b6d4;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-card {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+        }
+        
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .description {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .ingredients-list {
+            list-style: none;
+        }
+        
+        .ingredients-list li {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .ingredients-list li:before {
+            content: "🥘";
+            font-size: 1.2em;
+        }
+        
+        .allergen-item {
+            background: #fee;
+            color: #c33;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 5px;
+            font-weight: 500;
+        }
+        
+        .calories-box {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .calories-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .calories-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .all-predictions {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .all-predictions h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .prediction-item {
+            background: white;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .prediction-item span:first-child {
+            font-weight: 500;
+            color: #333;
+            text-transform: capitalize;
+        }
+        
+        .prediction-item span:last-child {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Detection Result</h2>
+
+        <div class="result-box" th:classappend="${error} ? 'error' : ''">
+            <div class="food-name" th:text="${food}">Food Name</div>
+            <div class="confidence" th:text="'Confidence: ' + ${confidence}">Confidence</div>
+            
+            <!-- Dietary Tags -->
+            <div class="dietary-tags" th:if="${!error and dietaryTags != null}">
+                <span class="tag vegan" th:if="${isVegan}">Vegan</span>
+                <span class="tag vegetarian" th:if="${isVegetarian and !isVegan}">Vegetarian</span>
+                <span class="tag gluten-free" th:if="${isGlutenFree}">Gluten-Free</span>
+                <span class="tag dairy-free" th:if="${isDairyFree}">Dairy-Free</span>
+            </div>
+        </div>
+
+        <!-- Food Information (only show if not error) -->
+        <div th:if="${!error}">
+            <div class="info-grid">
+                <!-- Description & Calories -->
+                <div class="info-card">
+                    <h3>Description</h3>
+                    <p class="description" th:text="${description}">Food description here</p>
+                    
+                    <div class="calories-box" th:if="${calories > 0}">
+                        <div class="calories-number" th:text="${calories}">250</div>
+                        <div class="calories-label">calories per serving</div>
+                    </div>
+                </div>
+
+                <!-- Ingredients -->
+                <div class="info-card">
+                    <h3>Ingredients</h3>
+                    <ul class="ingredients-list">
+                        <li th:each="ingredient : ${ingredients}" th:text="${ingredient}">Ingredient</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Allergens (if any) -->
+            <div class="info-card" th:if="${allergens != null and !allergens.isEmpty()}">
+                <h3>Allergen Warning</h3>
+                <div>
+                    <span class="allergen-item" th:each="allergen : ${allergens}" th:text="${allergen}">Allergen</span>
+                </div>
+            </div>
+
+            <!-- All Predictions -->
+            <div class="all-predictions" th:if="${allPredictions != null and !allPredictions.isEmpty()}">
+                <h3>All Predictions</h3>
+                <div class="prediction-item" th:each="pred, iterStat : ${allPredictions}">
+                    <span th:text="${iterStat.index + 1 + '. ' + pred}">1. Food Name</span>
+                </div>
+            </div>
+        </div>
+
+        <a href="/" class="btn">Try Another Image</a>
+    </div>
+</body>
+</html>
